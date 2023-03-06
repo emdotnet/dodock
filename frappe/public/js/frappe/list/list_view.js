@@ -675,18 +675,26 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 					col.type == "Subject" ? "list-subject level" : "hidden-xs",
 					col.type == "Tag" ? "tag-col hide" : "",
 					frappe.model.is_numeric_field(col.df) ? "text-right" : "",
-				].join(" ");
+				]
+					.filter(Boolean)
+					.join(" ");
 
-				return `
-				<div class="${classes}">
-					${
-						col.type === "Subject"
-							? subject_html
-							: `
-						<span>${__((col.df && col.df.label) || col.type)}</span>`
-					}
-				</div>
-			`;
+				let html;
+				if (col.type === "Subject") {
+					html = subject_html;
+				} else {
+					html = `<span>${__((col.df && col.df.label) || col.type)}</span>`;
+				}
+
+				let data = "";
+				if (col?.df?.fieldname) {
+					data += ` data-sort-by="${col.df.fieldname}"`;
+					// html += `<span class="list-row-col-sort-icon" style="line-height:0;">
+					// 	${frappe.utils.icon("sort", "xs")}
+					// </span>`;
+				}
+
+				return `<div class="${classes}" ${data}>${html}</div>`;
 			})
 			.join("");
 
@@ -1038,7 +1046,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		let subject_html = `
 			<span class="level-item select-like">
 				<input class="list-row-checkbox" type="checkbox"
-					data-name="${escape(doc.name)}">
+					data-name="${frappe.utils.escape_html(doc.name)}">
 				<span class="list-row-like hidden-xs style="margin-bottom: 1px;">
 					${this.get_like_html(doc)}
 				</span>
@@ -1092,6 +1100,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 	setup_events() {
 		this.setup_filterable();
+		this.setup_sort_by();
 		this.setup_list_click();
 		this.setup_tag_event();
 		this.setup_new_doc_event();
@@ -1229,6 +1238,21 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 				return [this.doctype, f[0], f[1], f.slice(2).join(",")];
 			});
 			this.filter_area.add(filters_to_apply);
+		});
+	}
+
+	setup_sort_by() {
+		this.$result.on("click", "[data-sort-by]", (e) => {
+			if (e.metaKey || e.ctrlKey) return;
+			e.stopPropagation();
+			const sort_by = e.currentTarget.getAttribute("data-sort-by");
+			let sort_order = this.sort_order; // keep the same sort order
+			if (this.sort_by === sort_by) {
+				// unless it's the same field, then toggle
+				sort_order = sort_order === "asc" ? "desc" : "asc";
+			}
+			this.sort_selector.set_value(sort_by, sort_order);
+			this.on_sort_change(sort_by, sort_order);
 		});
 	}
 
