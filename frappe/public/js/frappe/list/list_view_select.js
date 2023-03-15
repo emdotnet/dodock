@@ -75,7 +75,28 @@ frappe.views.ListViewSelect = class ListViewSelect {
 				action: () => this.set_route("calendar"),
 				current_view_handler: () => {
 					this.get_calendars().then((calendars) => {
-						this.setup_dropdown_in_sidebar("Calendar", calendars);
+						let default_action;
+						if (this.list_view?.calendar_name === "default") {
+							if (frappe.model.can_create("Calendar View")) {
+								default_action = {
+									label: __("New {0}", [__("Calendar View")]),
+									action: () => frappe.set_route("Form", "Calendar View", "new"),
+								};
+							}
+						} else {
+							if (frappe.model.can_write("Calendar View")) {
+								default_action = {
+									label: __("Edit"),
+									action: () =>
+										frappe.set_route(
+											"Form",
+											"Calendar View",
+											this.list_view?.calendar_name
+										),
+								};
+							}
+						}
+						this.setup_dropdown_in_sidebar("Calendar", calendars, default_action);
 					});
 				},
 			},
