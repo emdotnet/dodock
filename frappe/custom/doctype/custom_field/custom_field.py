@@ -149,8 +149,9 @@ class CustomField(Document):
 def get_fields_label(doctype=None):
 	meta = frappe.get_meta(doctype)
 
-	if doctype in core_doctypes_list:
-		return frappe.msgprint(_("Custom Fields cannot be added to core DocTypes."))
+	if frappe.conf.disable_core_customizations:
+		if doctype in core_doctypes_list:
+			return frappe.msgprint(_("Custom Fields cannot be added to core DocTypes."))
 
 	if meta.custom:
 		return frappe.msgprint(_("Custom Fields can only be added to a standard DocType."))
