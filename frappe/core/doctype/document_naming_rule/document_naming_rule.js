@@ -4,7 +4,9 @@
 frappe.ui.form.on("Document Naming Rule", {
 	refresh: function (frm) {
 		frm.trigger("document_type");
-		if (!frm.doc.__islocal) frm.trigger("add_update_counter_button");
+		if (!frm.doc.__islocal && frm.doc.naming_by !== "Format") {
+			frm.trigger("add_update_counter_button");
+		}
 	},
 	document_type: (frm) => {
 		// update the select field options with fieldnames

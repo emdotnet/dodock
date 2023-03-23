@@ -293,6 +293,7 @@ def parse_naming_series(
 	doctype=None,
 	doc: Optional["Document"] = None,
 	number_generator: Callable[[str, int], str] | None = None,
+	series_name: str | None = None,
 ) -> str:
 
 	"""Parse the naming series and get next name.
@@ -319,7 +320,7 @@ def parse_naming_series(
 		if e.startswith("#"):
 			if not series_set:
 				digits = len(e)
-				part = number_generator(name, digits)
+				part = number_generator(series_name or name, digits)
 				series_set = True
 		elif e == "YY":
 			part = today.strftime("%y")
