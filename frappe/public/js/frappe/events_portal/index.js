@@ -3,99 +3,48 @@
 
 frappe.provide("frappe.events");
 
-import { Calendar } from "@fullcalendar/core";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import listPlugin from "@fullcalendar/list";
-import interactionPlugin from "@fullcalendar/interaction";
+import "frappe/public/js/frappe/ui/web_calendar";
 
-//TODO: Adjust calendar start and end time to events + improve style
-
-frappe.events.EventsPortalView = class EventsPortalView {
-	constructor(options) {
-		Object.assign(this, options);
-		this.show();
-	}
-
-	show() {
-		this.build_calendar();
-	}
-
-	set_option(option, value) {
-		this.fullCalendar && this.fullCalendar.setOption(option, value);
-	}
-
-	build_calendar() {
-		const calendarEl = $("<div></div>").appendTo($(this.parent));
-		this.fullcalendar = new Calendar(calendarEl[0], this.calendar_options());
-		this.fullcalendar.render();
+frappe.events.EventsPortalView = class EventsPortalView extends frappe.ui.BaseWebCalendar {
+	constructor(opts) {
+		opts.wrapper ??= opts.parent;
+		super(opts);
 	}
 
 	calendar_options() {
-		const me = this;
-		return {
+		return Object.assign(super.calendar_options(), {
 			eventClassNames: "events-calendar",
-			contentHeight: "auto",
 			initialView: frappe.is_mobile() ? "listDay" : "dayGridMonth",
 			headerToolbar: {
 				left: frappe.is_mobile() ? "today" : "dayGridMonth,timeGridWeek",
 				center: "prev,title,next",
 				right: frappe.is_mobile() ? "" : "today",
 			},
-			weekends: true,
-			buttonText: {
-				today: __("Today"),
-				dayGridMonth: __("Month"),
-				timeGridWeek: __("Week"),
-			},
-			plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
-			locale: frappe.get_cookie("preferred_language") || frappe.boot.lang || "en",
-			timeZone: frappe.boot.time_zone.system || "UTC",
-			events: function (info, callback) {
-				return me.getEvents(info, callback);
-			},
-			eventClick: this.eventClick,
 			selectable: true,
-			noEventsContent: __("No events to display"),
-			allDayContent: function () {
-				return __("All Day");
-			},
-			slotMinTime: "08:00:00",
-			slotMaxTime: "20:00:00"
-		};
+			slotMinTime: "09:00:00",
+			slotMaxTime: "17:00:00",
+		});
 	}
 
-	getEvents(parameters, callback) {
-		frappe
+	onEventsUpdated() {
+		this.set_min_max_times({ min: "09:00:00", max: "17:00:00" });
+	}
+
+	async getEvents(parameters) {
+		return frappe
 			.call({
 				method: "frappe.desk.doctype.event.event.get_prepared_events",
 				args: {
-					start: moment(parameters.start).format("YYYY-MM-DD"),
-					end: moment(parameters.end).format("YYYY-MM-DD"),
+					start: this.format_ymd(parameters.start),
+					end: this.format_ymd(parameters.end),
 				},
 			})
 			.then((result) => {
-				this.prepared_events = result.message || [];
-
-				this.set_min_max_times();
-
-				callback(this.prepared_events);
+				return result.message || [];
 			});
 	}
 
-	set_min_max_times() {
-		let minTimes = this.prepared_events
-			.map((event) => moment(event.start).format("HH:mm:ss"))
-			.sort();
-		minTimes.length && this.set_option("slotMinTime", minTimes[0]);
-		let maxTimes = this.prepared_events
-			.map((event) => moment(event.end).format("HH:mm:ss"))
-			.sort()
-			.reverse();
-		maxTimes.length && this.set_option("slotMaxTime", maxTimes[0]);
-	}
-
-	eventClick(event) {
+	onEventClick(event) {
 		const dialog = new frappe.ui.Dialog({
 			size: "large",
 			title: __(event.event.title),
