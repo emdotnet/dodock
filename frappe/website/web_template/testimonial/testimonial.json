@@ -7,6 +7,7 @@
    "fieldname": "logo",
    "fieldtype": "Attach Image",
    "label": "Logo",
+   "options": "Public",
    "reqd": 0
   },
   {

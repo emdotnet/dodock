@@ -287,7 +287,8 @@
   {
    "fieldname": "meta_image",
    "fieldtype": "Attach Image",
-   "label": "Image"
+   "label": "Image",
+   "options": "Public"
   },
   {
    "default": "0",

@@ -18,6 +18,7 @@
    "fieldname": "app_logo",
    "fieldtype": "Attach Image",
    "label": "Application Logo",
+   "options": "Public",
    "show_days": 1,
    "show_seconds": 1
   },

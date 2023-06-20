@@ -51,6 +51,7 @@
    "fieldname": "icon",
    "fieldtype": "Attach Image",
    "label": "Icon",
+   "options": "Public",
    "reqd": 0
   }
  ],

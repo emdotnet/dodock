@@ -19,24 +19,28 @@
    "fieldname": "image_1",
    "fieldtype": "Attach Image",
    "label": "Image 1",
+   "options": "Public",
    "reqd": 1
   },
   {
    "fieldname": "image_2",
    "fieldtype": "Attach Image",
    "label": "Image 2",
+   "options": "Public",
    "reqd": 1
   },
   {
    "fieldname": "image_3",
    "fieldtype": "Attach Image",
    "label": "Image 3",
+   "options": "Public",
    "reqd": 0
   },
   {
    "fieldname": "image_4",
    "fieldtype": "Attach Image",
    "label": "Image 4",
+   "options": "Public",
    "reqd": 0
   }
  ],

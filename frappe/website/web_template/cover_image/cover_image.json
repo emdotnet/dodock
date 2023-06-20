@@ -11,6 +11,7 @@
    "fieldname": "url",
    "fieldtype": "Attach Image",
    "label": "Image",
+   "options": "Public",
    "reqd": 0
   },
   {

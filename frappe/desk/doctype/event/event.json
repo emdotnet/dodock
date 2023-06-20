@@ -220,6 +220,7 @@
   {
    "fieldname": "image",
    "fieldtype": "Attach Image",
+   "options": "Public",
    "hidden": 1,
    "label": "Image"
   },

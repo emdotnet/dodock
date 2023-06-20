@@ -45,6 +45,7 @@
    "fieldname": "card_1_image",
    "fieldtype": "Attach Image",
    "label": "Image",
+   "options": "Public",
    "reqd": 0
   },
   {
@@ -75,6 +76,7 @@
    "fieldname": "card_2_image",
    "fieldtype": "Attach Image",
    "label": "Image",
+   "options": "Public",
    "reqd": 0
   },
   {
@@ -105,6 +107,7 @@
    "fieldname": "card_3_image",
    "fieldtype": "Attach Image",
    "label": "Image",
+   "options": "Public",
    "reqd": 0
   },
   {
@@ -135,6 +138,7 @@
    "fieldname": "card_4_image",
    "fieldtype": "Attach Image",
    "label": "Image",
+   "options": "Public",
    "reqd": 0
   },
   {
@@ -165,6 +169,7 @@
    "fieldname": "card_5_image",
    "fieldtype": "Attach Image",
    "label": "Image",
+   "options": "Public",
    "reqd": 0
   },
   {
@@ -195,6 +200,7 @@
    "fieldname": "card_6_image",
    "fieldtype": "Attach Image",
    "label": "Image",
+   "options": "Public",
    "reqd": 0
   },
   {
@@ -225,6 +231,7 @@
    "fieldname": "card_7_image",
    "fieldtype": "Attach Image",
    "label": "Image",
+   "options": "Public",
    "reqd": 0
   },
   {
@@ -255,6 +262,7 @@
    "fieldname": "card_8_image",
    "fieldtype": "Attach Image",
    "label": "Image",
+   "options": "Public",
    "reqd": 0
   },
   {
@@ -285,6 +293,7 @@
    "fieldname": "card_9_image",
    "fieldtype": "Attach Image",
    "label": "Image",
+   "options": "Public",
    "reqd": 0
   },
   {
