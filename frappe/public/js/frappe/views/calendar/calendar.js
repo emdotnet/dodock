@@ -315,14 +315,19 @@ frappe.views.Calendar = class frappeCalendar {
 			initialView: defaults.initialView,
 			weekends: defaults.weekends,
 			nowIndicator: true,
-			events: function (parameters, callback) {
-				return frappe
-					.xcall(
-						me.get_events_method || "frappe.desk.calendar.get_events",
-						me.get_args(parameters.start, parameters.end)
-					)
-					.then((r) => {
-						let events = r || [];
+			buttonText: {
+				today: __("Today"),
+				month: __("Month"),
+				week: __("Week"),
+				day: __("Day")
+			},
+			events: function (start, end, timezone, callback) {
+				return frappe.call({
+					method: me.get_events_method || "frappe.desk.calendar.get_events",
+					type: "GET",
+					args: me.get_args(start, end),
+					callback: function (r) {
+						var events = r.message || [];
 						events = me.prepare_events(events);
 						callback(events);
 					});
