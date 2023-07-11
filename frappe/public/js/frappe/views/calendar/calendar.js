@@ -319,7 +319,7 @@ frappe.views.Calendar = class frappeCalendar {
 				today: __("Today"),
 				month: __("Month"),
 				week: __("Week"),
-				day: __("Day")
+				day: __("Day"),
 			},
 			events: function (start, end, timezone, callback) {
 				return frappe.call({
