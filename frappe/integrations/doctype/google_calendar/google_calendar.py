@@ -317,9 +317,265 @@ def call_calendar_hook(hook, **kwargs):
 		hook_method = (
 			frappe.get_hooks("gcalendar_integrations").get(reference_document, {}).get(hook, [])[-1]
 		)
-		if hook_method:
-			method = frappe.get_attr(hook_method)
-			frappe.call(method, **kwargs)
+	)
+	calendar_event.save(ignore_permissions=True)
+
+
+def insert_event_in_google_calendar(doc, method=None):
+	"""
+	Insert Events in Google Calendar if sync_with_google_calendar is checked.
+	"""
+	if (
+		not frappe.db.exists("Google Calendar", {"name": doc.google_calendar})
+		or doc.pulled_from_google_calendar
+		or not doc.sync_with_google_calendar
+	):
+		return
+
+	google_calendar, account = get_google_calendar_object(doc.google_calendar)
+
+	if not account.push_to_google_calendar:
+		return
+
+	event = {"summary": doc.subject, "description": doc.description, "google_calendar_event": 1}
+	event.update(
+		format_date_according_to_google_calendar(
+			doc.all_day, get_datetime(doc.starts_on), get_datetime(doc.ends_on) if doc.ends_on else None
+		)
+	)
+
+	if doc.repeat_on:
+		event.update({"recurrence": repeat_on_to_google_calendar_recurrence_rule(doc)})
+
+	event.update({"attendees": get_attendees(doc)})
+
+	conference_data_version = 0
+
+	if doc.add_video_conferencing:
+		event.update({"conferenceData": get_conference_data(doc)})
+		conference_data_version = 1
+
+	try:
+		event = (
+			google_calendar.events()
+			.insert(
+				calendarId=doc.google_calendar_id,
+				body=event,
+				conferenceDataVersion=conference_data_version,
+				sendUpdates="all",
+			)
+			.execute()
+		)
+
+		frappe.db.set_value(
+			"Event",
+			doc.name,
+			{"google_calendar_event_id": event.get("id"), "google_meet_link": event.get("hangoutLink")},
+			update_modified=False,
+		)
+
+		frappe.msgprint(_("Event Synced with Google Calendar."))
+	except HttpError as err:
+		frappe.throw(
+			_("Google Calendar - Could not insert event in Google Calendar {0}, error code {1}.").format(
+				account.name, err.resp.status
+			)
+		)
+
+
+def update_event_in_google_calendar(doc, method=None):
+	"""
+	Updates Events in Google Calendar if any existing event is modified in Frappe Calendar
+	"""
+	# Workaround to avoid triggering updation when Event is being inserted since
+	# creation and modified are same when inserting doc
+	if (
+		not frappe.db.exists("Google Calendar", {"name": doc.google_calendar})
+		or doc.modified == doc.creation
+		or not doc.sync_with_google_calendar
+	):
+		return
+
+	if doc.sync_with_google_calendar and not doc.google_calendar_event_id:
+		# If sync_with_google_calendar is checked later, then insert the event rather than updating it.
+		insert_event_in_google_calendar(doc)
+		return
+
+	google_calendar, account = get_google_calendar_object(doc.google_calendar)
+
+	if not account.push_to_google_calendar:
+		return
+
+	try:
+		event = (
+			google_calendar.events()
+			.get(calendarId=doc.google_calendar_id, eventId=doc.google_calendar_event_id)
+			.execute()
+		)
+
+		event["summary"] = doc.subject
+		event["description"] = doc.description
+		event["recurrence"] = repeat_on_to_google_calendar_recurrence_rule(doc)
+		event["status"] = (
+			"cancelled" if doc.status == "Cancelled" or doc.status == "Closed" else event.get("status")
+		)
+		event.update(
+			format_date_according_to_google_calendar(
+				doc.all_day, get_datetime(doc.starts_on), get_datetime(doc.ends_on) if doc.ends_on else None
+			)
+		)
+
+		conference_data_version = 0
+
+		if doc.add_video_conferencing:
+			event.update({"conferenceData": get_conference_data(doc)})
+			conference_data_version = 1
+		elif doc.get_doc_before_save().add_video_conferencing or event.get("hangoutLink"):
+			# remove google meet from google calendar event, if turning off add_video_conferencing
+			event.update({"conferenceData": None})
+			conference_data_version = 1
+
+		event.update({"attendees": get_attendees(doc)})
+
+		event = (
+			google_calendar.events()
+			.update(
+				calendarId=doc.google_calendar_id,
+				eventId=doc.google_calendar_event_id,
+				body=event,
+				conferenceDataVersion=conference_data_version,
+				sendUpdates="all",
+			)
+			.execute()
+		)
+
+		# if add_video_conferencing enabled or disabled during update, overwrite
+		frappe.db.set_value(
+			"Event",
+			doc.name,
+			{"google_meet_link": event.get("hangoutLink")},
+			update_modified=False,
+		)
+		doc.notify_update()
+
+		frappe.msgprint(_("Event Synced with Google Calendar."))
+	except HttpError as err:
+		frappe.throw(
+			_("Google Calendar - Could not update Event {0} in Google Calendar, error code {1}.").format(
+				doc.name, err.resp.status
+			)
+		)
+
+
+def delete_event_from_google_calendar(doc, method=None):
+	"""
+	Delete Events from Google Calendar if Frappe Event is deleted.
+	"""
+
+	if not frappe.db.exists("Google Calendar", {"name": doc.google_calendar}):
+		return
+
+	google_calendar, account = get_google_calendar_object(doc.google_calendar)
+
+	if not account.push_to_google_calendar:
+		return
+
+	try:
+		event = (
+			google_calendar.events()
+			.get(calendarId=doc.google_calendar_id, eventId=doc.google_calendar_event_id)
+			.execute()
+		)
+		event["recurrence"] = None
+		event["status"] = "cancelled"
+
+		google_calendar.events().update(
+			calendarId=doc.google_calendar_id, eventId=doc.google_calendar_event_id, body=event
+		).execute()
+	except HttpError as err:
+		frappe.msgprint(
+			_("Google Calendar - Could not delete Event {0} from Google Calendar, error code {1}.").format(
+				doc.name, err.resp.status
+			)
+		)
+
+
+def google_calendar_to_repeat_on(start, end, recurrence=None):
+	"""
+	recurrence is in the form ['RRULE:FREQ=WEEKLY;BYDAY=MO,TU,TH']
+	has the frequency and then the days on which the event recurs
+
+	Both have been mapped in a dict for easier mapping.
+	"""
+	repeat_on = {
+		"starts_on": (
+			get_datetime(start.get("date"))
+			if start.get("date")
+			else parser.parse(start.get("dateTime"))
+			.astimezone(ZoneInfo(get_system_timezone()))
+			.replace(tzinfo=None)
+		),
+		"ends_on": (
+			get_datetime(end.get("date"))
+			if end.get("date")
+			else parser.parse(end.get("dateTime"))
+			.astimezone(ZoneInfo(get_system_timezone()))
+			.replace(tzinfo=None)
+		),
+		"all_day": 1 if start.get("date") else 0,
+		"repeat_this_event": 1 if recurrence else 0,
+		"repeat_on": None,
+		"repeat_till": None,
+		"sunday": 0,
+		"monday": 0,
+		"tuesday": 0,
+		"wednesday": 0,
+		"thursday": 0,
+		"friday": 0,
+		"saturday": 0,
+	}
+
+	# recurrence rule "RRULE:FREQ=WEEKLY;BYDAY=MO,TU,TH"
+	if recurrence:
+		# google_calendar_frequency = RRULE:FREQ=WEEKLY, byday = BYDAY=MO,TU,TH, until = 20191028
+		google_calendar_frequency, until, byday = get_recurrence_parameters(recurrence)
+		repeat_on["repeat_on"] = google_calendar_frequencies.get(google_calendar_frequency)
+
+		if repeat_on["repeat_on"] == "Daily":
+			repeat_on["ends_on"] = None
+			repeat_on["repeat_till"] = datetime.strptime(until, "%Y%m%d") if until else None
+
+		if byday and repeat_on["repeat_on"] == "Weekly":
+			repeat_on["repeat_till"] = datetime.strptime(until, "%Y%m%d") if until else None
+			byday = byday.split("=")[1].split(",")
+			for repeat_day in byday:
+				repeat_on[google_calendar_days[repeat_day]] = 1
+
+		if byday and repeat_on["repeat_on"] == "Monthly":
+			byday = byday.split("=")[1]
+			repeat_day_week_number, repeat_day_name = None, None
+
+			for num in ["-2", "-1", "1", "2", "3", "4", "5"]:
+				if num in byday:
+					repeat_day_week_number = num
+					break
+
+			for day in ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]:
+				if day in byday:
+					repeat_day_name = google_calendar_days.get(day)
+					break
+
+			# Only Set starts_on for the event to repeat monthly
+			start_date = parse_google_calendar_recurrence_rule(int(repeat_day_week_number), repeat_day_name)
+			repeat_on["starts_on"] = start_date
+			repeat_on["ends_on"] = add_to_date(start_date, minutes=5)
+			repeat_on["repeat_till"] = datetime.strptime(until, "%Y%m%d") if until else None
+
+		if repeat_on["repeat_till"] == "Yearly":
+			repeat_on["ends_on"] = None
+			repeat_on["repeat_till"] = datetime.strptime(until, "%Y%m%d") if until else None
+
+	return repeat_on
 
 
 def format_date_according_to_google_calendar(all_day, starts_on, ends_on=None):
