@@ -141,7 +141,17 @@ frappe.views.CalendarView = class CalendarView extends frappe.views.ListView {
 		});
 	}
 
-	get required_libs() {}
+	get required_libs() {
+		let assets = [
+			"assets/frappe/js/lib/fullcalendar/fullcalendar.min.css",
+			"assets/frappe/js/lib/fullcalendar/fullcalendar.min.js",
+		];
+		let user_language = frappe.boot.lang;
+		if (user_language && user_language !== "en") {
+			assets.push("assets/frappe/js/lib/fullcalendar/locale-all.js");
+		}
+		return assets;
+	}
 };
 
 frappe.views.Calendar = class frappeCalendar {
@@ -298,12 +308,10 @@ frappe.views.Calendar = class frappeCalendar {
 		const me = this;
 
 		this.cal_options = {
-			locale: frappe.get_cookie("preferred_language") || frappe.boot.lang || "en",
-			plugins: [interactionPlugin, timeGridPlugin, dayGridPlugin],
-			headerToolbar: {
-				left: "dayGridMonth,timeGridWeek,timeGridDay",
-				center: "prev,title,next",
-				right: "today",
+			locale: frappe.boot.lang,
+			header: {
+				left: "prev, title, next",
+				right: "today, month, agendaWeek, agendaDay",
 			},
 			height: "auto",
 			editable: true,
