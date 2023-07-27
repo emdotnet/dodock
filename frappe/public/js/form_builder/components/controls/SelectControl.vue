@@ -40,6 +40,10 @@ function get_options() {
 		options.sort((a, b) => a.label.localeCompare(b.label));
 	}
 
+	if (props.df.sort_options) {
+		options.sort((a, b) => a.label.localeCompare(b.label));
+	}
+
 	return options;
 }
 
