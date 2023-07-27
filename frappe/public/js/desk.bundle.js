@@ -101,6 +101,7 @@ import "./frappe/ui/workspace_loading_skeleton.html";
 import "./frappe/ui/workspace_sidebar_loading_skeleton.html";
 import "./frappe/desk.js";
 import "./frappe/query_string.js";
+import "./frappe/ui/card_group.js"
 
 // import "./frappe/ui/comment.js";
 

@@ -1,0 +1,11 @@
+.responsive-card-deck {
+	display: grid !important;
+	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+	grid-gap: .5rem;
+}
+
+.card-in-card-deck {
+	min-width: 12rem !important;
+	margin-left: 5px !important;
+	margin-right: 5px !important;
+}
