@@ -191,6 +191,9 @@ class NotificationsView extends BaseNotificationsView {
 			if (this.settings.seen == 0 && this.dropdown_items.length > 0) {
 				this.toggle_notification_icon(false);
 			}
+			if (this.dropdown_items.some((item) => !item.read)) {
+				this.toggle_notification_icon(false);
+			}
 		});
 	}
 
