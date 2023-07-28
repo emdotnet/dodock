@@ -262,6 +262,9 @@ class NotificationsView extends BaseNotificationsView {
 		let user = notification_log.from_user;
 		let user_avatar = frappe.avatar(user, "avatar-medium user-avatar");
 
+		let mark_as_read_btn = `<div class="mark-as-read" title="${__("Mark as Read")}">
+			${frappe.utils.icon("tick", "xs")}
+		</div>`;
 		let item_html = $(`<a class="recent-item notification-item ${read_class}"
 				href="${doc_link}"
 				data-name="${notification_log.name}"
@@ -270,8 +273,7 @@ class NotificationsView extends BaseNotificationsView {
 					${user_avatar}
 					${message_html}
 				</div>
-				<div class="mark-as-read" title="${__("Mark as Read")}">
-				</div>
+				${notification_log.read ? "" : mark_as_read_btn}
 			</a>`);
 
 		if (!notification_log.read) {
