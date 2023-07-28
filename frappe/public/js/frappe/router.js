@@ -181,17 +181,20 @@ frappe.router = {
 
 		if (frappe.workspaces[route[0]]) {
 			// public workspace
-			route = [
-				"Workspaces",
-				frappe.workspaces[route[0]].name || frappe.workspaces[route[0]].title,
-			];
-		} else if (route[0] == "private" && frappe.workspaces[route[1]]) {
+			route = ["Workspaces", frappe.workspaces[route[0]].title];
+		} else if (route[0] == "private") {
 			// private workspace
-			route = [
-				"Workspaces",
-				"private",
-				frappe.workspaces[route[1]].name || frappe.workspaces[route[1]].title,
-			];
+			if (!frappe.workspaces[private_workspace] && localStorage.new_workspace) {
+				let new_workspace = JSON.parse(localStorage.new_workspace);
+				if (frappe.router.slug(new_workspace.title) === route[1]) {
+					frappe.workspaces[private_workspace] = new_workspace;
+				}
+			}
+			if (!frappe.workspaces[private_workspace]) {
+				frappe.msgprint(__("Workspace <b>{0}</b> does not exist", [route[1]]));
+				return ["Workspaces"];
+			}
+			route = ["Workspaces", "private", frappe.workspaces[private_workspace].title];
 		} else if (this.routes[route[0]]) {
 			// route
 			route = await this.set_doctype_route(route);
