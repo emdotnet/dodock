@@ -355,7 +355,7 @@ frappe.views.Workspace = class Workspace {
 				public: localStorage.is_current_page_public == "true",
 			};
 		} else if (Object.keys(this.all_pages).length !== 0) {
-			default_page = { name: this.all_pages[0].name, public: true };
+			default_page = { name: this.all_pages[0].title, public: this.all_pages[0].public };
 		} else {
 			default_page = { name: "Administration", public: true };
 		}
@@ -374,13 +374,12 @@ frappe.views.Workspace = class Workspace {
 			`).appendTo(this.body);
 		}
 
-		if (this.all_pages) {
+		if (this.all_pages.length) {
 			this.create_page_skeleton();
 
-			let pages = page.public ? this.public_pages : this.private_pages;
-			let current_page = pages.filter(
-				(p) => p.name == page.name || (!page.public && p.title == page.name)
-			)[0];
+			let pages =
+				page.public && this.public_pages.length ? this.public_pages : this.private_pages;
+			let current_page = pages.filter((p) => p.title == page.name)[0];
 			this.content = current_page && JSON.parse(current_page.content);
 
 			this.content && this.add_custom_cards_in_content();
