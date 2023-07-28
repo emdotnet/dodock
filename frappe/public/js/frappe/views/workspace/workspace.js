@@ -73,7 +73,7 @@ frappe.views.Workspace = class Workspace {
 			for (let page of this.all_pages) {
 				frappe.workspaces[frappe.router.slug(page.name)] = {
 					title: page.title,
-					name: page.name,
+					public: page.public,
 				};
 			}
 			this.make_sidebar();
