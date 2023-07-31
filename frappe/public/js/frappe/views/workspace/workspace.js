@@ -444,7 +444,8 @@ frappe.views.Workspace = class Workspace {
 				.map((f) => f.data)
 				.map((f) => f[`${item_type}_name`]);
 			const last_index =
-				(this.content || []).map((f) => f.type).lastIndexOf(item_type) || content.length;
+				(this.content || []).map((f) => f.type).lastIndexOf(item_type) ||
+				this.content.length;
 			extended_shortcuts.map((s, i) => {
 				if (existing_cards.includes(s.original_label || s.label)) {
 					return;
